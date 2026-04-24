@@ -1,7 +1,10 @@
 import axios from "axios";
 
+const apiBaseUrl =
+    import.meta.env.VITE_API_URL || "https://myorganizercore.vercel.app/api";
+
 const api = axios.create({
-    baseURL: "http://localhost:5001/api",
+    baseURL: apiBaseUrl,
 });
 
 api.interceptors.request.use((config) => {

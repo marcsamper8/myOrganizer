@@ -133,10 +133,11 @@ export function StorageContainer({ organizerItems = [] }) {
     return (
         <Stack
             component="section"
-            spacing={{ xs: 2.5, sm: 4 }}
+            spacing={{ xs: 2, sm: 4 }}
             sx={{
-                width: "100%",
-                alignItems: "center",
+                width: { xs: "90%", sm: "100%" },
+                alignItems: { xs: "space-evenly", sm: "center" },
+                margin: { xs: "3%" },
             }}
         >
             {organizerItems.map((organizedItems, index) => {
@@ -164,9 +165,6 @@ export function StorageContainer({ organizerItems = [] }) {
                             alignItems={{ xs: "stretch", sm: "center" }}
                             spacing={{ xs: 2.5, sm: 4 }}
                         >
-                            <Box sx={{ display: "flex", justifyContent: { xs: "center", sm: "flex-start" } }}>
-                                <ToolboxArt tone={tone} />
-                            </Box>
 
                             <Stack
                                 spacing={{ xs: 1.8, sm: 2.3 }}
