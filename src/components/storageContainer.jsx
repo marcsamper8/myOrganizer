@@ -133,11 +133,12 @@ export function StorageContainer({ organizerItems = [] }) {
     return (
         <Stack
             component="section"
-            spacing={{ xs: 2, sm: 4 }}
+            spacing={{ xs: 2.5, sm: 4 }}
             sx={{
-                width: { xs: "90%", sm: "100%" },
-                alignItems: { xs: "space-evenly", sm: "center" },
-                margin: { xs: "3%" },
+                width: "100%",
+                alignItems: "center",
+                mx: "auto",
+                px: "2"
             }}
         >
             {organizerItems.map((organizedItems, index) => {

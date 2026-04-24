@@ -157,7 +157,7 @@ export function MyOrganizer({ organizerItems }) {
                     </Stack>
                 </Box>
 
-                <Container maxWidth="lg" sx={{ py: { xs: 4, sm: 5 }, px: { xs: 2, sm: 4 } }}>
+                <Container maxWidth="lg" sx={{ py: { xs: 4, sm: 5 }, px: { xs: 5, sm: 4 } }}>
                     <StorageContainer organizerItems={organizerItems} />
                 </Container>
             </Box>
