@@ -47,8 +47,9 @@ function StorageQrCode({ storage, onOpenStorage }) {
         }
 
         QRCode.toDataURL(qrValue, {
-            width: 320,
-            margin: 2,
+            width: 512,
+            margin: 4,
+            errorCorrectionLevel: "H",
             color: {
                 dark: "#090927",
                 light: "#ffffff",

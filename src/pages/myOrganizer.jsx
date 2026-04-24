@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { StorageContainer } from "../components/storageContainer";
 import { OrganizerFooter, OrganizerHeader } from "../components/OrganizerChrome";
 import Alert from "@mui/material/Alert";
@@ -42,6 +42,31 @@ function QrScanIcon(props) {
         </SvgIcon>
     );
 }
+
+const qrScannerConfig = {
+    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+    verbose: false,
+};
+
+const clearScanner = async (scanner) => {
+    if (!scanner) {
+        return;
+    }
+
+    try {
+        if (scanner.isScanning) {
+            await scanner.stop();
+        }
+    } catch {
+        // The library throws if stop is called after the scanner already stopped.
+    }
+
+    try {
+        scanner.clear();
+    } catch {
+        // Clear can also throw when no camera session was created.
+    }
+};
 
 function PlantIllustration() {
     return (
@@ -167,13 +192,10 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                 return Promise.resolve();
             }
 
-            return scannerRef.current
-                .stop()
-                .catch(() => undefined)
-                .finally(() => {
-                    scannerRef.current?.clear();
-                    scannerRef.current = null;
-                });
+            const scanner = scannerRef.current;
+            scannerRef.current = null;
+
+            return clearScanner(scanner);
         };
 
         const startScanner = async () => {
@@ -182,15 +204,22 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                     return;
                 }
 
-                const scanner = new Html5Qrcode("qr-reader");
+                const scanner = new Html5Qrcode("qr-reader", qrScannerConfig);
                 scannerRef.current = scanner;
+                const cameras = await Html5Qrcode.getCameras();
+                const preferredCamera = cameras.find((camera) =>
+                    /back|rear|environment/i.test(camera.label)
+                ) || cameras.at(-1);
+                const cameraConfig = preferredCamera?.id || { facingMode: "environment" };
 
                 await scanner.start(
-                    { facingMode: "environment" },
+                    cameraConfig,
                     {
                         fps: 10,
-                        qrbox: { width: 240, height: 240 },
-                        aspectRatio: 1,
+                        qrbox: (viewfinderWidth, viewfinderHeight) => {
+                            const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.78);
+                            return { width: size, height: size };
+                        },
                     },
                     async (decodedText) => {
                         await stopScanner();
@@ -198,7 +227,7 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                     }
                 );
             } catch (error) {
-                setScanError(error.message || "Unable to open the camera.");
+                setScanError(error.message || "Unable to open the camera. Check camera permission and HTTPS.");
             }
         };
 
@@ -219,17 +248,16 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
 
         try {
             if (scannerRef.current) {
-                await scannerRef.current.stop().catch(() => undefined);
-                scannerRef.current.clear();
+                await clearScanner(scannerRef.current);
                 scannerRef.current = null;
             }
 
-            const scanner = new Html5Qrcode("qr-reader");
+            const scanner = new Html5Qrcode("qr-reader", qrScannerConfig);
             const decodedText = await scanner.scanFile(file, true);
-            scanner.clear();
+            await clearScanner(scanner);
             handleScannedValue(decodedText);
-        } catch (error) {
-            setScanError(error.message || "Could not scan this QR image.");
+        } catch {
+            setScanError("Could not read a QR code from that image. Use a clear, uncropped QR image.");
         } finally {
             event.target.value = "";
         }

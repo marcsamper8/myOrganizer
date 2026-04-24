@@ -85,8 +85,9 @@ export function AddOrganizer() {
     const buildPayload = async () => {
         const qrCode = createQrCodeValue(formValues.storageName);
         const qrCodeImage = await QRCode.toDataURL(qrCode, {
-            width: 320,
-            margin: 2,
+            width: 512,
+            margin: 4,
+            errorCorrectionLevel: "H",
             color: {
                 dark: "#090927",
                 light: "#ffffff",
