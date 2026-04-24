@@ -34,7 +34,7 @@ function ArrowRightIcon(props) {
     );
 }
 
-function StorageQrCode({ storage }) {
+function StorageQrCode({ storage, onOpenStorage }) {
     const [generatedQrImage, setGeneratedQrImage] = useState("");
     const qrImage = storage.qrCodeImage || generatedQrImage;
     const qrValue = storage.qrCode || storage._id;
@@ -66,9 +66,23 @@ function StorageQrCode({ storage }) {
 
     return (
         <Box
+            component="button"
+            type="button"
+            onClick={() => onOpenStorage(storage._id)}
+            aria-label={`Open ${storage.storageName} from QR code`}
             sx={{
                 flex: "0 0 auto",
                 order: 0,
+                border: 0,
+                p: 0,
+                m: 0,
+                bgcolor: "transparent",
+                cursor: "pointer",
+                borderRadius: 1,
+                "&:focus-visible": {
+                    outline: "3px solid rgba(82, 59, 214, 0.45)",
+                    outlineOffset: 4,
+                },
             }}
         >
             {qrImage ? (
@@ -153,7 +167,7 @@ export function StorageContainer({ organizerItems = [] }) {
                             sx={{ minHeight: 0 }}
                         >
 
-                            <StorageQrCode storage={organizedItems} />
+                            <StorageQrCode storage={organizedItems} onOpenStorage={storageOnClick} />
 
                             <Stack
                                 spacing={{ xs: 1.8, sm: 2.3 }}

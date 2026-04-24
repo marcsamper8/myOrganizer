@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Html5Qrcode } from "html5-qrcode";
 import { StorageContainer } from "../components/storageContainer";
 import { OrganizerFooter, OrganizerHeader } from "../components/OrganizerChrome";
 import Alert from "@mui/material/Alert";
@@ -96,9 +97,8 @@ function BoxesIllustration() {
 export function MyOrganizer({ organizerItems, isLoading = false }) {
     const navigate = useNavigate();
     const user = getStoredUser();
-    const videoRef = useRef(null);
-    const scanTimerRef = useRef(null);
-    const streamRef = useRef(null);
+    const scannerRef = useRef(null);
+    const fileInputRef = useRef(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [scanError, setScanError] = useState("");
@@ -132,26 +132,8 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
         setIsScannerOpen(false);
     };
 
-    useEffect(() => {
-        if (!isScannerOpen) {
-            return undefined;
-        }
-
-        let isActive = true;
-
-        const stopScanner = () => {
-            if (scanTimerRef.current) {
-                window.clearInterval(scanTimerRef.current);
-                scanTimerRef.current = null;
-            }
-
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach((track) => track.stop());
-                streamRef.current = null;
-            }
-        };
-
-        const findScannedStorage = (value) => {
+    const findScannedStorage = useMemo(() => {
+        return (value) => {
             const normalizedValue = value.trim().toLowerCase();
 
             return organizerItems.find((storage) =>
@@ -160,54 +142,61 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                     .some((field) => String(field).trim().toLowerCase() === normalizedValue)
             );
         };
+    }, [organizerItems]);
 
-        const startScanner = async () => {
-            if (!("BarcodeDetector" in window)) {
-                setScanError("QR scanning is not supported by this browser. Try Chrome on Android.");
-                return;
+    const handleScannedValue = useCallback((value) => {
+        const matchedStorage = findScannedStorage(value);
+
+        if (matchedStorage) {
+            setIsScannerOpen(false);
+            navigate(`/items/${matchedStorage._id}`);
+        } else {
+            setScanError("No organizer matches this QR code.");
+        }
+    }, [findScannedStorage, navigate]);
+
+    useEffect(() => {
+        if (!isScannerOpen) {
+            return undefined;
+        }
+
+        let isActive = true;
+
+        const stopScanner = () => {
+            if (!scannerRef.current) {
+                return Promise.resolve();
             }
 
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "environment" },
-                    audio: false,
+            return scannerRef.current
+                .stop()
+                .catch(() => undefined)
+                .finally(() => {
+                    scannerRef.current?.clear();
+                    scannerRef.current = null;
                 });
-                const barcodeDetector = new window.BarcodeDetector({ formats: ["qr_code"] });
+        };
 
+        const startScanner = async () => {
+            try {
                 if (!isActive) {
-                    stream.getTracks().forEach((track) => track.stop());
                     return;
                 }
 
-                streamRef.current = stream;
+                const scanner = new Html5Qrcode("qr-reader");
+                scannerRef.current = scanner;
 
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                    await videoRef.current.play();
-                }
-
-                scanTimerRef.current = window.setInterval(async () => {
-                    if (!videoRef.current || videoRef.current.readyState < 2) {
-                        return;
+                await scanner.start(
+                    { facingMode: "environment" },
+                    {
+                        fps: 10,
+                        qrbox: { width: 240, height: 240 },
+                        aspectRatio: 1,
+                    },
+                    async (decodedText) => {
+                        await stopScanner();
+                        handleScannedValue(decodedText);
                     }
-
-                    const barcodes = await barcodeDetector.detect(videoRef.current);
-                    const scannedValue = barcodes[0]?.rawValue;
-
-                    if (!scannedValue) {
-                        return;
-                    }
-
-                    const matchedStorage = findScannedStorage(scannedValue);
-
-                    if (matchedStorage) {
-                        stopScanner();
-                        setIsScannerOpen(false);
-                        navigate(`/items/${matchedStorage._id}`);
-                    } else {
-                        setScanError("No organizer matches this QR code.");
-                    }
-                }, 700);
+                );
             } catch (error) {
                 setScanError(error.message || "Unable to open the camera.");
             }
@@ -219,7 +208,32 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
             isActive = false;
             stopScanner();
         };
-    }, [isScannerOpen, navigate, organizerItems]);
+    }, [isScannerOpen, handleScannedValue]);
+
+    const onScanImageFile = async (event) => {
+        const file = event.target.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        try {
+            if (scannerRef.current) {
+                await scannerRef.current.stop().catch(() => undefined);
+                scannerRef.current.clear();
+                scannerRef.current = null;
+            }
+
+            const scanner = new Html5Qrcode("qr-reader");
+            const decodedText = await scanner.scanFile(file, true);
+            scanner.clear();
+            handleScannedValue(decodedText);
+        } catch (error) {
+            setScanError(error.message || "Could not scan this QR image.");
+        } finally {
+            event.target.value = "";
+        }
+    };
 
     return (
         <Box sx={{ width: "100%", minHeight: "100svh", bgcolor: "#f8f9fd", color: "#090927" }}>
@@ -340,20 +354,34 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                 <DialogTitle>Scan QR Code</DialogTitle>
                 <DialogContent>
                     <Box
-                        component="video"
-                        ref={videoRef}
-                        muted
-                        playsInline
+                        id="qr-reader"
                         sx={{
                             width: "100%",
-                            aspectRatio: "1 / 1",
+                            minHeight: 280,
                             borderRadius: 2,
                             bgcolor: "#090927",
-                            objectFit: "cover",
+                            overflow: "hidden",
+                            "& video": {
+                                width: "100% !important",
+                            },
                         }}
                     />
                 </DialogContent>
                 <DialogActions>
+                    <Button
+                        component="label"
+                        sx={{ textTransform: "none", fontWeight: 700 }}
+                    >
+                        Scan Image
+                        <Box
+                            component="input"
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={onScanImageFile}
+                            sx={{ display: "none" }}
+                        />
+                    </Button>
                     <Button onClick={closeScanner} sx={{ textTransform: "none", fontWeight: 700 }}>
                         Cancel
                     </Button>
