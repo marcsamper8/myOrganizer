@@ -451,6 +451,14 @@ export function MyOrganizer({ organizerItems, setOrganizerItems, isLoading = fal
                             startAdornment: <SearchIcon sx={{ color: "#6a708c", mr: 1.5 }} />,
                         }}
                     />
+                    <Alert severity="info"
+                        sx={{
+                            marginBottom: 2,
+                            borderRadius: "15px",
+                        }}
+                    >Keep things organized — return items after use.</Alert>
+
+
                     {isLoading ?
                         <Skeleton variant="rectangular" height={120} sx={{
                             borderRadius: "10px",
@@ -475,6 +483,7 @@ export function MyOrganizer({ organizerItems, setOrganizerItems, isLoading = fal
                     }
 
                 </Container>
+
             </Box>
 
             <OrganizerFooter active="Home" />
