@@ -13,6 +13,7 @@ import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import { getStoredUser } from "../utils/authStorage";
 
 const initialFormValues = {
     storageName: "",
@@ -29,7 +30,7 @@ const createEmptyOrganizerItem = () => ({
 
 export function AddOrganizer() {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = getStoredUser();
     const [formValues, setFormValues] = useState(initialFormValues);
     const [items, setItems] = useState([createEmptyOrganizerItem()]);
     const [isSaving, setIsSaving] = useState(false);

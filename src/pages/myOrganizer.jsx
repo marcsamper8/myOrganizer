@@ -7,6 +7,8 @@ import Container from "@mui/material/Container";
 import SvgIcon from "@mui/material/SvgIcon";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import Skeleton from '@mui/material/Skeleton';
+import { clearAuthSession, getStoredUser } from "../utils/authStorage";
 
 function LogoutIcon(props) {
     return (
@@ -75,13 +77,13 @@ function BoxesIllustration() {
     );
 }
 
-export function MyOrganizer({ organizerItems }) {
+export function MyOrganizer({ organizerItems, isLoading = false }) {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = getStoredUser();
+
 
     const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        clearAuthSession();
         navigate("/");
     };
 
@@ -158,7 +160,20 @@ export function MyOrganizer({ organizerItems }) {
                 </Box>
 
                 <Container maxWidth="lg" sx={{ py: { xs: 4, sm: 5 }, px: { xs: 5, sm: 4 } }}>
-                    <StorageContainer organizerItems={organizerItems} />
+                    {isLoading ?
+                        <Skeleton variant="rectangular" height={120} sx={{
+                            borderRadius: "10px",
+                        }} /> :
+
+                        <StorageContainer organizerItems={organizerItems} />
+                    }
+
+                    {organizerItems.length === 0 && !isLoading &&
+                        <Typography gutterBottom sx={{ color: "text.secondary", fontSize: 13, letterSpacing: 1.2, mb: 0 }}>
+                            Start to organize your things now
+                        </Typography>
+                    }
+
                 </Container>
             </Box>
 

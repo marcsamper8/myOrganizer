@@ -7,6 +7,7 @@ import Link from "@mui/material/Link";
 import SvgIcon from "@mui/material/SvgIcon";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import { getStoredUser } from "../utils/authStorage";
 
 function BackIcon(props) {
     return (
@@ -72,7 +73,7 @@ export function Items({ organizerItems }) {
     const { storageId } = useParams();
     const selectedStorage = organizerItems.find((item) => item._id === storageId);
     const items = selectedStorage?.items || [];
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = getStoredUser();
 
     return (
         <Box sx={{ minHeight: "100svh", bgcolor: "#f7f8fc", color: "#090927", display: "flex", flexDirection: "column" }}>

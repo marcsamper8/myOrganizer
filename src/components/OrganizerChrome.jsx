@@ -9,6 +9,7 @@ import SvgIcon from "@mui/material/SvgIcon";
 import Stack from "@mui/material/Stack";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
+import { clearAuthSession } from "../utils/authStorage";
 
 export function OrganizerIcon(props) {
     return (
@@ -57,8 +58,7 @@ export function OrganizerHeader({ user }) {
 
     const handleLogout = () => {
         setAccountMenuAnchor(null);
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        clearAuthSession();
         navigate("/");
     };
 

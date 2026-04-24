@@ -1,4 +1,9 @@
 import { createContext, useState, useEffect } from "react";
+import {
+    clearAuthSession,
+    getAuthToken,
+    persistAuthSession,
+} from "../utils/authStorage";
 
 export const AuthContext = createContext();
 
@@ -6,7 +11,7 @@ export function AuthProvider({ children }) {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
+        const token = getAuthToken();
 
         if (token) {
             setIsLoggedIn(true);
@@ -15,15 +20,13 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
-    const login = (token, user) => {
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+    const login = (token, user, rememberMe = true) => {
+        persistAuthSession({ token, user, rememberMe });
         setIsLoggedIn(true);
     };
 
     const logout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        clearAuthSession();
         setIsLoggedIn(false);
     };
 

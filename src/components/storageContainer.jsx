@@ -8,6 +8,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { checkColorIfLight } from '../utils/customUtils'
 
+
 function BriefcaseIcon(props) {
     return (
         <SvgIcon viewBox="0 0 24 24" {...props}>
@@ -125,6 +126,7 @@ function ToolboxArt({ tone = "purple" }) {
 
 export function StorageContainer({ organizerItems = [] }) {
     const navigate = useNavigate();
+
 
     const storageOnClick = (storageId) => {
         navigate(`/items/${storageId}`);

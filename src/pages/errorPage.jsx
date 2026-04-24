@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
+import { getAuthToken, getStoredUser } from "../utils/authStorage";
 
 export function ErrorPage() {
     const navigate = useNavigate();
 
-    const token = localStorage.getItem("token");
-    const tokenUser = localStorage.getItem("user");
+    const token = getAuthToken();
+    const tokenUser = getStoredUser();
 
     return (
         <div>
@@ -13,7 +14,7 @@ export function ErrorPage() {
 
             {token ? (
                 <>
-                    {tokenUser}
+                    <p>Signed in as {tokenUser?.name || tokenUser?.email || "Organizer"}.</p>
                     <p>You are logged in.</p>
                     <button onClick={() => navigate("/organizer")}>
                         Go to Dashboard
