@@ -4,11 +4,18 @@ import { MyOrganizer } from "./pages/myOrganizer";
 import { AddOrganizer } from "./pages/AddOrganizer";
 import { ErrorPage } from "./pages/errorPage";
 import { Items } from "./pages/Items";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import api from "./utils/axios";
 import "./App.css";
 import { getAuthToken } from "./utils/authStorage";
 
+function ProtectedRoute({ children }) {
+  return getAuthToken() ? children : <Navigate to="/" replace />;
+}
+
+function PublicRoute({ children }) {
+  return getAuthToken() ? <Navigate to="/organizer" replace /> : children;
+}
 
 function App() {
   const [organizerItems, setOrganizerItems] = useState([]);
@@ -45,13 +52,13 @@ function App() {
   return (
     <>
       <Routes>
-        <Route index element={<Login />} />
-        <Route path="/organizer" element={<MyOrganizer organizerItems={organizerItems} isLoading={isLoading} />} />
-        <Route path="/organizer/add" element={<AddOrganizer />} />
+        <Route index element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/organizer" element={<ProtectedRoute><MyOrganizer organizerItems={organizerItems} setOrganizerItems={setOrganizerItems} isLoading={isLoading} /></ProtectedRoute>} />
+        <Route path="/organizer/add" element={<ProtectedRoute><AddOrganizer /></ProtectedRoute>} />
         <Route
           path="/items/:storageId"
           element={
-            <Items organizerItems={organizerItems} setOrganizerItems={setOrganizerItems} />
+            <ProtectedRoute><Items organizerItems={organizerItems} setOrganizerItems={setOrganizerItems} /></ProtectedRoute>
           } />
         <Route path="*" element={<ErrorPage />} />
       </Routes>

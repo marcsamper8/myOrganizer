@@ -11,13 +11,7 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import { clearAuthSession } from "../utils/authStorage";
 
-export function OrganizerIcon(props) {
-    return (
-        <SvgIcon viewBox="0 0 24 24" {...props}>
-            <path d="M5 5.5A2.5 2.5 0 0 1 7.5 3h9A2.5 2.5 0 0 1 19 5.5V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5.5Zm2.5-.75a.75.75 0 0 0-.75.75V8h10.5V5.5a.75.75 0 0 0-.75-.75h-9ZM9 11h6v2H9v-2Z" />
-        </SvgIcon>
-    );
-}
+const logoPath = "/myorganizer-logo.png";
 
 function UserIcon(props) {
     return (
@@ -67,21 +61,21 @@ export function OrganizerHeader({ user }) {
             <Toolbar sx={{ minHeight: { xs: 72, sm: 88 }, px: { xs: 2, sm: 3 }, gap: 2 }}>
                 <Stack direction="row" alignItems="center" spacing={{ xs: 1.25, sm: 2 }} sx={{ flex: 1, minWidth: 0 }}>
                     <Box
+                        component="img"
+                        src={logoPath}
+                        alt="myOrganizer logo"
                         sx={{
-                            width: { xs: 38, sm: 48 },
-                            height: { xs: 38, sm: 48 },
+                            width: { xs: 42, sm: 54 },
+                            height: { xs: 42, sm: 54 },
                             borderRadius: 1,
-                            display: "grid",
-                            placeItems: "center",
-                            bgcolor: "#6656dc",
-                            color: "#edeaff",
+                            display: "block",
+                            objectFit: "cover",
+                            bgcolor: "#fff",
                             flex: "0 0 auto",
                         }}
-                    >
-                        <OrganizerIcon sx={{ fontSize: { xs: 25, sm: 30 } }} />
-                    </Box>
+                    />
                     <Typography sx={{ color: "white", fontWeight: 700, fontSize: { xs: 21, sm: 28 }, lineHeight: 1.1, whiteSpace: "nowrap" }}>
-                        My Organizer
+                        myOrganizer
                     </Typography>
                 </Stack>
 

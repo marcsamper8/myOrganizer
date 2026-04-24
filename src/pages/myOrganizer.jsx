@@ -11,6 +11,7 @@ import Container from "@mui/material/Container";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Snackbar from "@mui/material/Snackbar";
 import SvgIcon from "@mui/material/SvgIcon";
@@ -19,6 +20,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Skeleton from '@mui/material/Skeleton';
 import { getStoredUser } from "../utils/authStorage";
+import api from "../utils/axios";
 
 function PlusIcon(props) {
     return (
@@ -164,7 +166,7 @@ function BoxesIllustration() {
     );
 }
 
-export function MyOrganizer({ organizerItems, isLoading = false }) {
+export function MyOrganizer({ organizerItems, setOrganizerItems, isLoading = false }) {
     const navigate = useNavigate();
     const user = getStoredUser();
     const scannerRef = useRef(null);
@@ -172,6 +174,10 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [scanError, setScanError] = useState("");
+    const [storageToDelete, setStorageToDelete] = useState(null);
+    const [isDeletingStorage, setIsDeletingStorage] = useState(false);
+    const [deleteMessage, setDeleteMessage] = useState("");
+    const [deleteError, setDeleteError] = useState("");
 
     const filteredOrganizerItems = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
@@ -200,6 +206,39 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
 
     const closeScanner = () => {
         setIsScannerOpen(false);
+    };
+
+    const confirmDeleteStorage = (storage) => {
+        setStorageToDelete(storage);
+        setDeleteError("");
+    };
+
+    const closeDeleteDialog = () => {
+        if (!isDeletingStorage) {
+            setStorageToDelete(null);
+        }
+    };
+
+    const deleteStorage = async () => {
+        if (!storageToDelete) {
+            return;
+        }
+
+        setIsDeletingStorage(true);
+        setDeleteError("");
+
+        try {
+            await api.delete(`/organize-items/${storageToDelete._id}`);
+            setOrganizerItems((prev) =>
+                prev.filter((storage) => storage._id !== storageToDelete._id)
+            );
+            setDeleteMessage(`${storageToDelete.storageName} was removed.`);
+            setStorageToDelete(null);
+        } catch (error) {
+            setDeleteError(error.response?.data?.message || "Could not remove this organizer. Please try again.");
+        } finally {
+            setIsDeletingStorage(false);
+        }
     };
 
     const findScannedStorage = useMemo(() => {
@@ -417,7 +456,11 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                             borderRadius: "10px",
                         }} /> :
 
-                        <StorageContainer organizerItems={filteredOrganizerItems} />
+                        <StorageContainer
+                            organizerItems={filteredOrganizerItems}
+                            onDeleteStorage={confirmDeleteStorage}
+                            isDeletingStorage={isDeletingStorage}
+                        />
                     }
 
                     {organizerItems.length === 0 && !isLoading &&
@@ -475,9 +518,47 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                 </DialogActions>
             </Dialog>
 
+            <Dialog open={Boolean(storageToDelete)} onClose={closeDeleteDialog} fullWidth maxWidth="xs">
+                <DialogTitle>Remove this organizer?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {storageToDelete?.storageName} and the items inside it will no longer appear in your organizer.
+                    </DialogContentText>
+                    {deleteError && (
+                        <Alert severity="error" sx={{ mt: 2 }}>
+                            {deleteError}
+                        </Alert>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                    <Button onClick={closeDeleteDialog} disabled={isDeletingStorage} sx={{ textTransform: "none", fontWeight: 700 }}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={deleteStorage}
+                        disabled={isDeletingStorage}
+                        variant="contained"
+                        sx={{
+                            bgcolor: "#b42318",
+                            textTransform: "none",
+                            fontWeight: 700,
+                            boxShadow: "none",
+                            "&:hover": { bgcolor: "#971b12" },
+                        }}
+                    >
+                        {isDeletingStorage ? "Removing..." : "Remove"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
             <Snackbar open={Boolean(scanError)} autoHideDuration={4000} onClose={() => setScanError("")} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
                 <Alert severity="error" variant="filled" onClose={() => setScanError("")}>
                     {scanError}
+                </Alert>
+            </Snackbar>
+            <Snackbar open={Boolean(deleteMessage)} autoHideDuration={3500} onClose={() => setDeleteMessage("")} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+                <Alert severity="success" variant="filled" onClose={() => setDeleteMessage("")}>
+                    {deleteMessage}
                 </Alert>
             </Snackbar>
         </Box>

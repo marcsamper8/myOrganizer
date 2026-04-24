@@ -26,6 +26,8 @@ const defaultFormState = {
     rememberMe: true,
 };
 
+const logoPath = "/myorganizer-logo.png";
+
 function Login() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
@@ -134,7 +136,25 @@ function Login() {
                 }}>
                     <FormControl fullWidth>
                         <CardContent>
-                            <Stack spacing={1.5} sx={{ mb: 2 }}>
+                            <Stack spacing={1.5} alignItems="center" sx={{ mb: 2, textAlign: "center", width: "100%" }}>
+                                <Box
+                                    sx={{
+                                        width: "100%",
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <Box
+                                        component="img"
+                                        src={logoPath}
+                                        alt="myOrganizer logo"
+                                        sx={{
+                                            width: { xs: 180, sm: 220 },
+                                            height: "auto",
+                                            display: "block",
+                                        }}
+                                    />
+                                </Box>
                                 <Typography gutterBottom sx={{ color: "text.secondary", fontSize: 13, letterSpacing: 1.2, mb: 0 }}>
                                     {mode === "login" ? "WELCOME BACK" : "CREATE ACCOUNT"}
                                 </Typography>
@@ -148,7 +168,7 @@ function Login() {
                                 </Typography>
                             </Stack>
 
-                            <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
+                            {/* <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
                                 <Button
                                     type="button"
                                     variant={mode === "login" ? "contained" : "outlined"}
@@ -179,7 +199,7 @@ function Login() {
                                 >
                                     Register
                                 </Button>
-                            </Stack>
+                            </Stack> */}
 
                             {mode === "register" ? (
                                 <TextField

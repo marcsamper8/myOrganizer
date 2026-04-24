@@ -78,6 +78,12 @@ function BoxesIllustration() {
     );
 }
 
+const emptyNewItem = {
+    itemName: "",
+    itemType: "",
+    quantity: 1,
+};
+
 export function Items({ organizerItems, setOrganizerItems }) {
     const navigate = useNavigate();
     const { storageId } = useParams();
@@ -88,6 +94,10 @@ export function Items({ organizerItems, setOrganizerItems }) {
     const [removeQuantity, setRemoveQuantity] = useState(1);
     const [isRemoving, setIsRemoving] = useState(false);
     const [error, setError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
+    const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+    const [newItem, setNewItem] = useState(emptyNewItem);
+    const [isSavingItem, setIsSavingItem] = useState(false);
 
     const closeRemovalDialog = () => {
         if (isRemoving) {
@@ -109,6 +119,67 @@ export function Items({ organizerItems, setOrganizerItems }) {
         setRemoveQuantity(quantity);
     };
 
+    const openAddItemDialog = () => {
+        setNewItem(emptyNewItem);
+        setError("");
+        setIsAddItemOpen(true);
+    };
+
+    const closeAddItemDialog = () => {
+        if (!isSavingItem) {
+            setIsAddItemOpen(false);
+        }
+    };
+
+    const onNewItemChange = (event) => {
+        const { name, value } = event.target;
+
+        setNewItem((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    const saveNewItem = async () => {
+        if (!selectedStorage) {
+            return;
+        }
+
+        if (!newItem.itemName.trim()) {
+            setError("Add a name for the item first.");
+            return;
+        }
+
+        const itemToAdd = {
+            itemName: newItem.itemName.trim(),
+            itemType: newItem.itemType.trim(),
+            quantity: Math.max(Number(newItem.quantity) || 1, 1),
+        };
+
+        setIsSavingItem(true);
+        setError("");
+
+        try {
+            const response = await api.put(`/organize-items/${selectedStorage._id}`, {
+                items: [...items, itemToAdd],
+                lastUpdate: new Date().toISOString(),
+            });
+
+            setOrganizerItems((prev) =>
+                prev.map((storage) =>
+                    storage._id === selectedStorage._id ? response.data : storage
+                )
+            );
+            setSuccessMessage(`${itemToAdd.itemName} was added.`);
+            setIsAddItemOpen(false);
+            setNewItem(emptyNewItem);
+        } catch (requestError) {
+            setError(requestError.response?.data?.message || "Could not add this item. Please try again.");
+        } finally {
+            setIsSavingItem(false);
+        }
+    };
+
     const confirmRemoveItem = async () => {
         if (!selectedStorage || removalTarget === null) {
             return;
@@ -116,13 +187,14 @@ export function Items({ organizerItems, setOrganizerItems }) {
 
         const currentQuantity = removalTarget.quantity;
         const quantityToRemove = Math.min(Math.max(Number(removeQuantity) || currentQuantity, 1), currentQuantity);
+        const isRemovingAll = quantityToRemove >= currentQuantity;
         const nextItems = items
             .map((item, index) => {
                 if (index !== removalTarget.itemIndex) {
                     return item;
                 }
 
-                if (quantityToRemove >= currentQuantity) {
+                if (isRemovingAll) {
                     return null;
                 }
 
@@ -146,6 +218,11 @@ export function Items({ organizerItems, setOrganizerItems }) {
                 prev.map((storage) =>
                     storage._id === selectedStorage._id ? response.data : storage
                 )
+            );
+            setSuccessMessage(
+                isRemovingAll
+                    ? `${removalTarget.itemName} was removed.`
+                    : `${quantityToRemove} ${removalTarget.itemName} removed.`
             );
             setRemovalTarget(null);
         } catch (requestError) {
@@ -225,6 +302,25 @@ export function Items({ organizerItems, setOrganizerItems }) {
                     <Typography component="h2" sx={{ color: "#090927", fontSize: { xs: 28, sm: 34 }, fontWeight: 700, lineHeight: 1.2, letterSpacing: 0, m: 0 }}>
                         {items.length > 1 ? 'Items' : 'Item'} in {selectedStorage?.storageName || "Storage"}
                     </Typography>
+                    <Button
+                        type="button"
+                        variant="contained"
+                        onClick={openAddItemDialog}
+                        sx={{
+                            mt: 2,
+                            minWidth: 150,
+                            height: 48,
+                            borderRadius: 1.5,
+                            bgcolor: "#523bd6",
+                            color: "white",
+                            fontWeight: 700,
+                            textTransform: "none",
+                            boxShadow: "none",
+                            "&:hover": { bgcolor: "#442fc0" },
+                        }}
+                    >
+                        Add Item
+                    </Button>
                     <Box sx={{
                         height: 1,
                         bgcolor: "#e4e7f1",
@@ -238,12 +334,68 @@ export function Items({ organizerItems, setOrganizerItems }) {
 
             <OrganizerFooter active="Organizers" />
 
+            <Dialog open={isAddItemOpen} onClose={closeAddItemDialog} fullWidth maxWidth="xs">
+                <DialogTitle>Add item</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2.5} sx={{ pt: 1 }}>
+                        <Typography sx={{ color: "#555b7a", fontSize: 16 }}>
+                            Add a new item to {selectedStorage?.storageName || "this organizer"}.
+                        </Typography>
+                        <TextField
+                            required
+                            fullWidth
+                            name="itemName"
+                            label="Item Name"
+                            value={newItem.itemName}
+                            onChange={onNewItemChange}
+                        />
+                        <TextField
+                            fullWidth
+                            name="itemType"
+                            label="Item Type"
+                            value={newItem.itemType}
+                            onChange={onNewItemChange}
+                        />
+                        <TextField
+                            fullWidth
+                            name="quantity"
+                            label="Quantity"
+                            type="number"
+                            value={newItem.quantity}
+                            onChange={onNewItemChange}
+                            inputProps={{ min: 1 }}
+                        />
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                    <Button onClick={closeAddItemDialog} disabled={isSavingItem} sx={{ textTransform: "none", fontWeight: 700 }}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={saveNewItem}
+                        disabled={isSavingItem}
+                        variant="contained"
+                        sx={{
+                            bgcolor: "#523bd6",
+                            textTransform: "none",
+                            fontWeight: 700,
+                            boxShadow: "none",
+                            "&:hover": { bgcolor: "#442fc0" },
+                        }}
+                    >
+                        {isSavingItem ? "Saving..." : "Save Item"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
             <Dialog open={Boolean(removalTarget)} onClose={closeRemovalDialog} fullWidth maxWidth="xs">
-                <DialogTitle>Remove item</DialogTitle>
+                <DialogTitle>Remove this item?</DialogTitle>
                 <DialogContent>
                     <Stack spacing={2} sx={{ pt: 1 }}>
                         <Typography sx={{ color: "#555b7a", fontSize: 16 }}>
-                            Confirm removal of {removalTarget?.itemName}. This change will be saved to the database.
+                            {removalTarget?.quantity > 1
+                                ? `How many ${removalTarget?.itemName} would you like to remove?`
+                                : `${removalTarget?.itemName} will be removed from this organizer.`}
                         </Typography>
                         {(removalTarget?.quantity || 0) > 1 && (
                             <TextField
@@ -256,7 +408,7 @@ export function Items({ organizerItems, setOrganizerItems }) {
                                     min: 1,
                                     max: removalTarget?.quantity || 1,
                                 }}
-                                helperText={`Default is all ${removalTarget?.quantity || 1}.`}
+                                helperText={`Leave it as ${removalTarget?.quantity || 1} to remove them all.`}
                             />
                         )}
                     </Stack>
@@ -277,7 +429,7 @@ export function Items({ organizerItems, setOrganizerItems }) {
                             "&:hover": { bgcolor: "#971b12" },
                         }}
                     >
-                        {isRemoving ? "Removing..." : "Confirm Remove"}
+                        {isRemoving ? "Removing..." : "Remove"}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -285,6 +437,11 @@ export function Items({ organizerItems, setOrganizerItems }) {
             <Snackbar open={Boolean(error)} autoHideDuration={4000} onClose={() => setError("")} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
                 <Alert severity="error" variant="filled" onClose={() => setError("")}>
                     {error}
+                </Alert>
+            </Snackbar>
+            <Snackbar open={Boolean(successMessage)} autoHideDuration={3500} onClose={() => setSuccessMessage("")} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+                <Alert severity="success" variant="filled" onClose={() => setSuccessMessage("")}>
+                    {successMessage}
                 </Alert>
             </Snackbar>
         </Box>

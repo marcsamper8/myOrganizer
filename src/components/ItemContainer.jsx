@@ -1,14 +1,14 @@
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import SvgIcon from "@mui/material/SvgIcon";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
-function DeleteIcon(props) {
+function CloseIcon(props) {
     return (
         <SvgIcon viewBox="0 0 24 24" {...props}>
-            <path d="M8 4h8l1 2h4v2H3V6h4l1-2Zm-2 6h12l-.8 10H6.8L6 10Zm3 2 .4 6h1.8l-.3-6H9Zm4 0-.3 6h1.8l.4-6H13Z" />
+            <path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z" />
         </SvgIcon>
     );
 }
@@ -103,6 +103,7 @@ export function ItemContainer({ items = [], onRemoveItem, isUpdating = false }) 
                         <Paper
                             elevation={0}
                             sx={{
+                                position: "relative",
                                 width: "auto",
                                 border: "1px solid #e4e7f1",
                                 borderRadius: 2,
@@ -111,9 +112,33 @@ export function ItemContainer({ items = [], onRemoveItem, isUpdating = false }) 
                                 bgcolor: "#fff",
                             }}
                         >
-                            <Stack direction={{ xs: "column", sm: "row" }}
-                                alignItems={{ xs: "stretch", sm: "center" }}
+                            {onRemoveItem && (
+                                <IconButton
+                                    aria-label={`Remove ${itemName}`}
+                                    disabled={isUpdating}
+                                    onClick={() => onRemoveItem(index)}
+                                    sx={{
+                                        position: "absolute",
+                                        top: { xs: 10, sm: 12 },
+                                        right: { xs: 10, sm: 12 },
+                                        width: 34,
+                                        height: 34,
+                                        border: "1px solid #f0b4ad",
+                                        bgcolor: "#fff5f3",
+                                        color: "#b42318",
+                                        zIndex: 2,
+                                        "&:hover": {
+                                            bgcolor: "#fee4e2",
+                                        },
+                                    }}
+                                >
+                                    <CloseIcon sx={{ fontSize: 20 }} />
+                                </IconButton>
+                            )}
+                            <Stack direction="row"
+                                alignItems="center"
                                 spacing={{ xs: 2, sm: 5 }}
+                                sx={{ pr: onRemoveItem ? { xs: 4.5, sm: 5 } : 0 }}
                             >
 
                                 <Stack
@@ -150,27 +175,6 @@ export function ItemContainer({ items = [], onRemoveItem, isUpdating = false }) 
                                         {itemType}
                                     </Typography>
                                 </Stack>
-                                {onRemoveItem && (
-                                    <Button
-                                        type="button"
-                                        variant="outlined"
-                                        startIcon={<DeleteIcon />}
-                                        disabled={isUpdating}
-                                        onClick={() => onRemoveItem(index)}
-                                        sx={{
-                                            alignSelf: { xs: "stretch", sm: "center" },
-                                            minWidth: { xs: "100%", sm: 132 },
-                                            height: 46,
-                                            borderRadius: 1.5,
-                                            borderColor: "#f0b4ad",
-                                            color: "#b42318",
-                                            fontWeight: 700,
-                                            textTransform: "none",
-                                        }}
-                                    >
-                                        Remove
-                                    </Button>
-                                )}
                             </Stack>
                         </Paper>
                     </Box>

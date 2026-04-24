@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import SvgIcon from "@mui/material/SvgIcon";
 import Stack from "@mui/material/Stack";
@@ -30,6 +31,14 @@ function ArrowRightIcon(props) {
     return (
         <SvgIcon viewBox="0 0 24 24" {...props}>
             <path d="m13.2 5.8 5.2 5.2H4v2h14.4l-5.2 5.2 1.4 1.4L22.2 12l-7.6-7.6-1.4 1.4Z" />
+        </SvgIcon>
+    );
+}
+
+function CloseIcon(props) {
+    return (
+        <SvgIcon viewBox="0 0 24 24" {...props}>
+            <path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z" />
         </SvgIcon>
     );
 }
@@ -121,7 +130,7 @@ function StorageQrCode({ storage, onOpenStorage }) {
     );
 }
 
-export function StorageContainer({ organizerItems = [] }) {
+export function StorageContainer({ organizerItems = [], onDeleteStorage, isDeletingStorage = false }) {
     const navigate = useNavigate();
 
 
@@ -152,6 +161,7 @@ export function StorageContainer({ organizerItems = [] }) {
                         component="article"
                         elevation={0}
                         sx={{
+                            position: "relative",
                             width: "100%",
                             maxWidth: 1010,
                             p: { xs: 2, sm: 2.5 },
@@ -160,6 +170,29 @@ export function StorageContainer({ organizerItems = [] }) {
                             boxShadow: "0 8px 22px rgba(33, 34, 65, 0.08)",
                         }}
                     >
+                        {onDeleteStorage && (
+                            <IconButton
+                                aria-label={`Remove ${organizedItems.storageName}`}
+                                onClick={() => onDeleteStorage(organizedItems)}
+                                disabled={isDeletingStorage}
+                                sx={{
+                                    position: "absolute",
+                                    top: { xs: 8, sm: 10 },
+                                    right: { xs: 8, sm: 10 },
+                                    width: 34,
+                                    height: 34,
+                                    border: "1px solid #f0b4ad",
+                                    bgcolor: "#fff5f3",
+                                    color: "#b42318",
+                                    zIndex: 2,
+                                    "&:hover": {
+                                        bgcolor: "#fee4e2",
+                                    },
+                                }}
+                            >
+                                <CloseIcon sx={{ fontSize: 20 }} />
+                            </IconButton>
+                        )}
                         <Stack
                             direction="row"
                             alignItems="center"
