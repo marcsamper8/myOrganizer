@@ -34,6 +34,7 @@ function App() {
       } catch (error) {
         console.error("Failed to fetch organizer items:", error);
         setOrganizerItems([]);
+        setIsLoading(false);
       }
     };
 
@@ -50,7 +51,7 @@ function App() {
         <Route
           path="/items/:storageId"
           element={
-            <Items organizerItems={organizerItems} />
+            <Items organizerItems={organizerItems} setOrganizerItems={setOrganizerItems} />
           } />
         <Route path="*" element={<ErrorPage />} />
       </Routes>

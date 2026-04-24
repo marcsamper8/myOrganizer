@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import QRCode from "qrcode";
 import { OrganizerItemFields } from "../components/OrganizerItemFields";
 import { OrganizerFooter, OrganizerHeader } from "../components/OrganizerChrome";
 import api from "../utils/axios";
@@ -19,6 +20,7 @@ const initialFormValues = {
     storageName: "",
     location: "",
     qrCode: "",
+    qrCodeImage: "",
     color: "#7b63cf",
 };
 
@@ -27,6 +29,20 @@ const createEmptyOrganizerItem = () => ({
     itemType: "",
     quantity: 1,
 });
+
+const createQrCodeValue = (storageName) => {
+    const slug = storageName
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+    const uniquePart =
+        typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    return `organizer:${slug || "storage"}:${uniquePart}`;
+};
 
 export function AddOrganizer() {
     const navigate = useNavigate();
@@ -66,11 +82,21 @@ export function AddOrganizer() {
         setItems((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
     };
 
-    const buildPayload = () => {
+    const buildPayload = async () => {
+        const qrCode = createQrCodeValue(formValues.storageName);
+        const qrCodeImage = await QRCode.toDataURL(qrCode, {
+            width: 320,
+            margin: 2,
+            color: {
+                dark: "#090927",
+                light: "#ffffff",
+            },
+        });
         const payload = {
             storageName: formValues.storageName.trim(),
             location: formValues.location.trim(),
-            qrCode: formValues.qrCode.trim(),
+            qrCode,
+            qrCodeImage,
             color: formValues.color.trim(),
             items: items
                 .filter((item) => item.itemName.trim())
@@ -96,7 +122,7 @@ export function AddOrganizer() {
         setError("");
 
         try {
-            await api.post("/organize-items", buildPayload());
+            await api.post("/organize-items", await buildPayload());
             navigate("/organizer");
         } catch (requestError) {
             setError(requestError.response?.data?.message || "Failed to add organizer.");
@@ -159,13 +185,6 @@ export function AddOrganizer() {
                                         value={formValues.location}
                                         onChange={onChangeHandler}
                                     />
-                                    <TextField
-                                        fullWidth
-                                        name="qrCode"
-                                        label="QR Code"
-                                        value={formValues.qrCode}
-                                        onChange={onChangeHandler}
-                                    />
                                     <Stack direction="row" spacing={2} alignItems="center">
                                         <TextField
                                             fullWidth
@@ -192,6 +211,23 @@ export function AddOrganizer() {
                                             }}
                                         />
                                     </Stack>
+                                    <Paper
+                                        elevation={0}
+                                        sx={{
+                                            gridColumn: { xs: "auto", md: "1 / -1" },
+                                            border: "1px solid #e4e7f1",
+                                            borderRadius: 2,
+                                            bgcolor: "#fbfcff",
+                                            p: 2,
+                                        }}
+                                    >
+                                        <Typography sx={{ color: "#090927", fontSize: 18, fontWeight: 700, mb: 0.5 }}>
+                                            QR Code
+                                        </Typography>
+                                        <Typography sx={{ color: "#6a708c", fontSize: 15 }}>
+                                            A unique QR code will be generated automatically when this organizer is saved.
+                                        </Typography>
+                                    </Paper>
                                 </Box>
                             </Box>
 

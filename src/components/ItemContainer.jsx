@@ -1,14 +1,14 @@
 import Box from "@mui/material/Box";
-import IconButton from "@mui/material/IconButton";
+import Button from "@mui/material/Button";
 import Paper from "@mui/material/Paper";
 import SvgIcon from "@mui/material/SvgIcon";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
-function ChevronRightIcon(props) {
+function DeleteIcon(props) {
     return (
         <SvgIcon viewBox="0 0 24 24" {...props}>
-            <path d="m9.4 6 6 6-6 6L8 16.6l4.6-4.6L8 7.4 9.4 6Z" />
+            <path d="M8 4h8l1 2h4v2H3V6h4l1-2Zm-2 6h12l-.8 10H6.8L6 10Zm3 2 .4 6h1.8l-.3-6H9Zm4 0-.3 6h1.8l.4-6H13Z" />
         </SvgIcon>
     );
 }
@@ -68,7 +68,7 @@ function ItemArt({ name = "", type = "" }) {
     );
 }
 
-export function ItemContainer({ items = [] }) {
+export function ItemContainer({ items = [], onRemoveItem, isUpdating = false }) {
     if (!items.length) {
         return (
             <Paper
@@ -111,8 +111,8 @@ export function ItemContainer({ items = [] }) {
                                 bgcolor: "#fff",
                             }}
                         >
-                            <Stack direction="row"
-                                alignItems="center"
+                            <Stack direction={{ xs: "column", sm: "row" }}
+                                alignItems={{ xs: "stretch", sm: "center" }}
                                 spacing={{ xs: 2, sm: 5 }}
                             >
 
@@ -150,6 +150,27 @@ export function ItemContainer({ items = [] }) {
                                         {itemType}
                                     </Typography>
                                 </Stack>
+                                {onRemoveItem && (
+                                    <Button
+                                        type="button"
+                                        variant="outlined"
+                                        startIcon={<DeleteIcon />}
+                                        disabled={isUpdating}
+                                        onClick={() => onRemoveItem(index)}
+                                        sx={{
+                                            alignSelf: { xs: "stretch", sm: "center" },
+                                            minWidth: { xs: "100%", sm: 132 },
+                                            height: 46,
+                                            borderRadius: 1.5,
+                                            borderColor: "#f0b4ad",
+                                            color: "#b42318",
+                                            fontWeight: 700,
+                                            textTransform: "none",
+                                        }}
+                                    >
+                                        Remove
+                                    </Button>
+                                )}
                             </Stack>
                         </Paper>
                     </Box>

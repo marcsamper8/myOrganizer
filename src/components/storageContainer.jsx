@@ -1,21 +1,14 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import QRCode from "qrcode";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import SvgIcon from "@mui/material/SvgIcon";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { checkColorIfLight } from '../utils/customUtils'
 
-
-function BriefcaseIcon(props) {
-    return (
-        <SvgIcon viewBox="0 0 24 24" {...props}>
-            <path d="M8 6V4.8A2.8 2.8 0 0 1 10.8 2h2.4A2.8 2.8 0 0 1 16 4.8V6h2.5A2.5 2.5 0 0 1 21 8.5v9A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5v-9A2.5 2.5 0 0 1 5.5 6H8Zm2-1.2V6h4V4.8a.8.8 0 0 0-.8-.8h-2.4a.8.8 0 0 0-.8.8ZM5 12v5.5a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5V12h-5v1.5A1.5 1.5 0 0 1 12.5 15h-1A1.5 1.5 0 0 1 10 13.5V12H5Zm0-3.5V10h14V8.5a.5.5 0 0 0-.5-.5h-13a.5.5 0 0 0-.5.5Z" />
-        </SvgIcon>
-    );
-}
 
 function HomeIcon(props) {
     return (
@@ -41,85 +34,74 @@ function ArrowRightIcon(props) {
     );
 }
 
-function ChevronRightIcon(props) {
-    return (
-        <SvgIcon viewBox="0 0 24 24" {...props}>
-            <path d="m9.4 6 6 6-6 6L8 16.6l4.6-4.6L8 7.4 9.4 6Z" />
-        </SvgIcon>
-    );
-}
+function StorageQrCode({ storage }) {
+    const [generatedQrImage, setGeneratedQrImage] = useState("");
+    const qrImage = storage.qrCodeImage || generatedQrImage;
+    const qrValue = storage.qrCode || storage._id;
 
-function ToolboxArt({ tone = "purple" }) {
-    const isBlue = tone === "blue";
-    const main = isBlue ? "#2f7df0" : "#7b63cf";
-    const top = isBlue ? "#61a0ff" : "#9b86df";
-    const bg = isBlue ? "#edf5ff" : "#f3efff";
-    const border = isBlue ? "#d9e8ff" : "#e7defa";
+    useEffect(() => {
+        let isActive = true;
+
+        if (storage.qrCodeImage || !qrValue) {
+            return undefined;
+        }
+
+        QRCode.toDataURL(qrValue, {
+            width: 320,
+            margin: 2,
+            color: {
+                dark: "#090927",
+                light: "#ffffff",
+            },
+        }).then((image) => {
+            if (isActive) {
+                setGeneratedQrImage(image);
+            }
+        });
+
+        return () => {
+            isActive = false;
+        };
+    }, [qrValue, storage.qrCodeImage]);
 
     return (
         <Box
-            aria-hidden="true"
             sx={{
-                width: { xs: 118, sm: 176 },
-                aspectRatio: "1 / 1",
-                borderRadius: { xs: 5, sm: 7 },
-                display: "grid",
-                placeItems: "center",
-                bgcolor: bg,
-                border: `1px solid ${border}`,
                 flex: "0 0 auto",
+                order: 0,
             }}
         >
-            <Box sx={{ position: "relative", width: "66%", height: "56%" }}>
+            {qrImage ? (
                 <Box
+                    component="img"
+                    src={qrImage}
+                    alt={`${storage.storageName} QR code`}
                     sx={{
-                        position: "absolute",
-                        left: "29%",
-                        top: 0,
-                        width: "42%",
-                        height: "28%",
-                        border: `7px solid ${main}`,
-                        borderBottom: 0,
-                        borderRadius: "14px 14px 0 0",
-                    }}
-                />
-                <Box
-                    sx={{
-                        position: "absolute",
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        height: "68%",
-                        bgcolor: main,
-                        borderRadius: "6px 6px 10px 10px",
-                        boxShadow: "inset 0 -7px 0 rgba(5, 18, 70, 0.18)",
-                    }}
-                />
-                <Box
-                    sx={{
-                        position: "absolute",
-                        left: 0,
-                        right: 0,
-                        top: "30%",
-                        height: "32%",
-                        bgcolor: top,
-                        borderRadius: "6px",
-                        border: `2px solid ${main}`,
-                    }}
-                />
-                <Box
-                    sx={{
-                        position: "absolute",
-                        left: "42%",
-                        top: "52%",
-                        width: "17%",
-                        height: "26%",
+                        width: { xs: 112, sm: 150 },
+                        height: { xs: 112, sm: 150 },
+                        objectFit: "contain",
                         bgcolor: "#fff",
-                        border: `3px solid ${top}`,
-                        borderRadius: "4px",
+                        borderRadius: 1,
+                        display: "block",
                     }}
                 />
-            </Box>
+            ) : (
+                <Box
+                    sx={{
+                        width: { xs: 112, sm: 150 },
+                        height: { xs: 112, sm: 150 },
+                        display: "grid",
+                        placeItems: "center",
+                        bgcolor: "#fff",
+                        borderRadius: 1,
+                        color: "#6a708c",
+                        fontSize: 13,
+                        fontWeight: 700,
+                    }}
+                >
+                    Loading
+                </Box>
+            )}
         </Box>
     );
 }
@@ -157,24 +139,29 @@ export function StorageContainer({ organizerItems = [] }) {
                         sx={{
                             width: "100%",
                             maxWidth: 1010,
-                            p: { xs: 2.25, sm: 3.5 },
+                            p: { xs: 2, sm: 2.5 },
                             borderRadius: 2,
                             border: `1px solid ${organizedItems.color}`,
                             boxShadow: "0 8px 22px rgba(33, 34, 65, 0.08)",
                         }}
                     >
                         <Stack
-                            direction={{ xs: "column", sm: "row" }}
-                            alignItems={{ xs: "stretch", sm: "center" }}
-                            spacing={{ xs: 2.5, sm: 4 }}
+                            direction="row"
+                            alignItems="center"
+                            justifyContent="flex-start"
+                            spacing={{ xs: 1.75, sm: 3 }}
+                            sx={{ minHeight: 0 }}
                         >
+
+                            <StorageQrCode storage={organizedItems} />
 
                             <Stack
                                 spacing={{ xs: 1.8, sm: 2.3 }}
                                 sx={{
-                                    flex: 1,
+                                    flex: "1 1 auto",
                                     minWidth: 0,
-                                    textAlign: { xs: "center", sm: "left" },
+                                    textAlign: "left",
+                                    order: 1,
 
                                 }}
                             >
@@ -196,7 +183,7 @@ export function StorageContainer({ organizerItems = [] }) {
                                 <Stack
                                     spacing={1.5}
                                     sx={{
-                                        alignItems: { xs: "center", sm: "flex-start" },
+                                        alignItems: "flex-start",
                                     }}
                                 >
                                     <Stack direction="row" spacing={1.5} alignItems="center">
@@ -218,8 +205,8 @@ export function StorageContainer({ organizerItems = [] }) {
                                     variant="outlined"
                                     endIcon={<ArrowRightIcon />}
                                     sx={{
-                                        alignSelf: { xs: "center", sm: "flex-start" },
-                                        mt: { xs: 0.5, sm: 1 },
+                                        alignSelf: "flex-start",
+                                        mt: 0,
                                         minWidth: 182,
                                         height: 56,
                                         borderRadius: 1.5,

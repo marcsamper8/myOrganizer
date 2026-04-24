@@ -1,27 +1,43 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StorageContainer } from "../components/storageContainer";
 import { OrganizerFooter, OrganizerHeader } from "../components/OrganizerChrome";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import Snackbar from "@mui/material/Snackbar";
 import SvgIcon from "@mui/material/SvgIcon";
 import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Skeleton from '@mui/material/Skeleton';
-import { clearAuthSession, getStoredUser } from "../utils/authStorage";
-
-function LogoutIcon(props) {
-    return (
-        <SvgIcon viewBox="0 0 24 24" {...props}>
-            <path d="M10 4h9v16h-9v-2h7V6h-7V4Zm-1.3 4.3 1.4 1.4L7.8 12l2.3 2.3-1.4 1.4L4 11l4.7-4.7Z" />
-        </SvgIcon>
-    );
-}
+import { getStoredUser } from "../utils/authStorage";
 
 function PlusIcon(props) {
     return (
         <SvgIcon viewBox="0 0 24 24" {...props}>
             <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z" />
+        </SvgIcon>
+    );
+}
+
+function SearchIcon(props) {
+    return (
+        <SvgIcon viewBox="0 0 24 24" {...props}>
+            <path d="M10.5 4a6.5 6.5 0 0 1 5.12 10.5l4.44 4.44-1.42 1.42-4.44-4.44A6.5 6.5 0 1 1 10.5 4Zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Z" />
+        </SvgIcon>
+    );
+}
+
+function QrScanIcon(props) {
+    return (
+        <SvgIcon viewBox="0 0 24 24" {...props}>
+            <path d="M4 4h7v7H4V4Zm2 2v3h3V6H6Zm7-2h7v7h-7V4Zm2 2v3h3V6h-3ZM4 13h7v7H4v-7Zm2 2v3h3v-3H6Zm8-2h2v2h-2v-2Zm4 0h2v3h-3v-2h1v-1Zm-4 4h2v3h-2v-3Zm4 1h2v2h-2v-2Z" />
         </SvgIcon>
     );
 }
@@ -80,12 +96,130 @@ function BoxesIllustration() {
 export function MyOrganizer({ organizerItems, isLoading = false }) {
     const navigate = useNavigate();
     const user = getStoredUser();
+    const videoRef = useRef(null);
+    const scanTimerRef = useRef(null);
+    const streamRef = useRef(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [scanError, setScanError] = useState("");
 
+    const filteredOrganizerItems = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
 
-    const handleLogout = () => {
-        clearAuthSession();
-        navigate("/");
+        if (!query) {
+            return organizerItems;
+        }
+
+        return organizerItems.filter((storage) => {
+            const storageText = [
+                storage.storageName,
+                storage.location,
+                storage.qrCode,
+                ...(storage.items || []).flatMap((item) => [
+                    item.itemName,
+                    item.itemType,
+                ]),
+            ]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+
+            return storageText.includes(query);
+        });
+    }, [organizerItems, searchQuery]);
+
+    const closeScanner = () => {
+        setIsScannerOpen(false);
     };
+
+    useEffect(() => {
+        if (!isScannerOpen) {
+            return undefined;
+        }
+
+        let isActive = true;
+
+        const stopScanner = () => {
+            if (scanTimerRef.current) {
+                window.clearInterval(scanTimerRef.current);
+                scanTimerRef.current = null;
+            }
+
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach((track) => track.stop());
+                streamRef.current = null;
+            }
+        };
+
+        const findScannedStorage = (value) => {
+            const normalizedValue = value.trim().toLowerCase();
+
+            return organizerItems.find((storage) =>
+                [storage._id, storage.storageName, storage.qrCode]
+                    .filter(Boolean)
+                    .some((field) => String(field).trim().toLowerCase() === normalizedValue)
+            );
+        };
+
+        const startScanner = async () => {
+            if (!("BarcodeDetector" in window)) {
+                setScanError("QR scanning is not supported by this browser. Try Chrome on Android.");
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "environment" },
+                    audio: false,
+                });
+                const barcodeDetector = new window.BarcodeDetector({ formats: ["qr_code"] });
+
+                if (!isActive) {
+                    stream.getTracks().forEach((track) => track.stop());
+                    return;
+                }
+
+                streamRef.current = stream;
+
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                    await videoRef.current.play();
+                }
+
+                scanTimerRef.current = window.setInterval(async () => {
+                    if (!videoRef.current || videoRef.current.readyState < 2) {
+                        return;
+                    }
+
+                    const barcodes = await barcodeDetector.detect(videoRef.current);
+                    const scannedValue = barcodes[0]?.rawValue;
+
+                    if (!scannedValue) {
+                        return;
+                    }
+
+                    const matchedStorage = findScannedStorage(scannedValue);
+
+                    if (matchedStorage) {
+                        stopScanner();
+                        setIsScannerOpen(false);
+                        navigate(`/items/${matchedStorage._id}`);
+                    } else {
+                        setScanError("No organizer matches this QR code.");
+                    }
+                }, 700);
+            } catch (error) {
+                setScanError(error.message || "Unable to open the camera.");
+            }
+        };
+
+        startScanner();
+
+        return () => {
+            isActive = false;
+            stopScanner();
+        };
+    }, [isScannerOpen, navigate, organizerItems]);
 
     return (
         <Box sx={{ width: "100%", minHeight: "100svh", bgcolor: "#f8f9fd", color: "#090927" }}>
@@ -136,17 +270,54 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                             >
                                 Add Organizer
                             </Button>
+                            <Button
+                                onClick={() => {
+                                    setScanError("");
+                                    setIsScannerOpen(true);
+                                }}
+                                variant="outlined"
+                                startIcon={<QrScanIcon />}
+                                sx={{
+                                    display: { xs: "inline-flex", sm: "none" },
+                                    minWidth: "100%",
+                                    height: 52,
+                                    borderRadius: 1.5,
+                                    borderColor: "#c7c9ef",
+                                    color: "#4c47b9",
+                                    fontSize: 16,
+                                    fontWeight: 700,
+                                    textTransform: "none",
+                                }}
+                            >
+                                Scan QR Code
+                            </Button>
                         </Stack>
                     </Stack>
                 </Box>
 
                 <Container maxWidth="lg" sx={{ py: { xs: 4, sm: 5 }, px: { xs: 5, sm: 4 } }}>
+                    <TextField
+                        fullWidth
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder="Search storage or items"
+                        sx={{
+                            mb: { xs: 2.5, sm: 4 },
+                            bgcolor: "#fff",
+                            "& .MuiOutlinedInput-root": {
+                                borderRadius: 2,
+                            },
+                        }}
+                        InputProps={{
+                            startAdornment: <SearchIcon sx={{ color: "#6a708c", mr: 1.5 }} />,
+                        }}
+                    />
                     {isLoading ?
                         <Skeleton variant="rectangular" height={120} sx={{
                             borderRadius: "10px",
                         }} /> :
 
-                        <StorageContainer organizerItems={organizerItems} />
+                        <StorageContainer organizerItems={filteredOrganizerItems} />
                     }
 
                     {organizerItems.length === 0 && !isLoading &&
@@ -154,11 +325,46 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                             Start to organize your things now
                         </Typography>
                     }
+                    {organizerItems.length > 0 && filteredOrganizerItems.length === 0 && !isLoading &&
+                        <Typography gutterBottom sx={{ color: "text.secondary", fontSize: 16, mb: 0 }}>
+                            No storage matches your search.
+                        </Typography>
+                    }
 
                 </Container>
             </Box>
 
             <OrganizerFooter active="Home" />
+
+            <Dialog open={isScannerOpen} onClose={closeScanner} fullWidth maxWidth="xs">
+                <DialogTitle>Scan QR Code</DialogTitle>
+                <DialogContent>
+                    <Box
+                        component="video"
+                        ref={videoRef}
+                        muted
+                        playsInline
+                        sx={{
+                            width: "100%",
+                            aspectRatio: "1 / 1",
+                            borderRadius: 2,
+                            bgcolor: "#090927",
+                            objectFit: "cover",
+                        }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeScanner} sx={{ textTransform: "none", fontWeight: 700 }}>
+                        Cancel
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Snackbar open={Boolean(scanError)} autoHideDuration={4000} onClose={() => setScanError("")} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+                <Alert severity="error" variant="filled" onClose={() => setScanError("")}>
+                    {scanError}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

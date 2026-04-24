@@ -1,11 +1,21 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ItemContainer } from "../components/ItemContainer";
 import { OrganizerFooter, OrganizerHeader } from "../components/OrganizerChrome";
+import api from "../utils/axios";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
 import Link from "@mui/material/Link";
+import Snackbar from "@mui/material/Snackbar";
 import SvgIcon from "@mui/material/SvgIcon";
 import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { getStoredUser } from "../utils/authStorage";
 
@@ -68,12 +78,82 @@ function BoxesIllustration() {
     );
 }
 
-export function Items({ organizerItems }) {
+export function Items({ organizerItems, setOrganizerItems }) {
     const navigate = useNavigate();
     const { storageId } = useParams();
     const selectedStorage = organizerItems.find((item) => item._id === storageId);
     const items = selectedStorage?.items || [];
     const user = getStoredUser();
+    const [removalTarget, setRemovalTarget] = useState(null);
+    const [removeQuantity, setRemoveQuantity] = useState(1);
+    const [isRemoving, setIsRemoving] = useState(false);
+    const [error, setError] = useState("");
+
+    const closeRemovalDialog = () => {
+        if (isRemoving) {
+            return;
+        }
+
+        setRemovalTarget(null);
+    };
+
+    const startRemoveItem = (itemIndex) => {
+        const item = items[itemIndex];
+        const quantity = Number(item?.quantity ?? item?.qty ?? 1) || 1;
+
+        setRemovalTarget({
+            itemIndex,
+            itemName: item?.itemName || item?.name || "this item",
+            quantity,
+        });
+        setRemoveQuantity(quantity);
+    };
+
+    const confirmRemoveItem = async () => {
+        if (!selectedStorage || removalTarget === null) {
+            return;
+        }
+
+        const currentQuantity = removalTarget.quantity;
+        const quantityToRemove = Math.min(Math.max(Number(removeQuantity) || currentQuantity, 1), currentQuantity);
+        const nextItems = items
+            .map((item, index) => {
+                if (index !== removalTarget.itemIndex) {
+                    return item;
+                }
+
+                if (quantityToRemove >= currentQuantity) {
+                    return null;
+                }
+
+                return {
+                    ...item,
+                    quantity: currentQuantity - quantityToRemove,
+                };
+            })
+            .filter(Boolean);
+
+        setIsRemoving(true);
+        setError("");
+
+        try {
+            const response = await api.put(`/organize-items/${selectedStorage._id}`, {
+                items: nextItems,
+                lastUpdate: new Date().toISOString(),
+            });
+
+            setOrganizerItems((prev) =>
+                prev.map((storage) =>
+                    storage._id === selectedStorage._id ? response.data : storage
+                )
+            );
+            setRemovalTarget(null);
+        } catch (requestError) {
+            setError(requestError.response?.data?.message || "Failed to remove item.");
+        } finally {
+            setIsRemoving(false);
+        }
+    };
 
     return (
         <Box sx={{
@@ -152,11 +232,61 @@ export function Items({ organizerItems }) {
                     }}
                     />
 
-                    <ItemContainer items={items} />
+                    <ItemContainer items={items} onRemoveItem={startRemoveItem} isUpdating={isRemoving} />
                 </Container>
             </Box>
 
             <OrganizerFooter active="Organizers" />
+
+            <Dialog open={Boolean(removalTarget)} onClose={closeRemovalDialog} fullWidth maxWidth="xs">
+                <DialogTitle>Remove item</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2} sx={{ pt: 1 }}>
+                        <Typography sx={{ color: "#555b7a", fontSize: 16 }}>
+                            Confirm removal of {removalTarget?.itemName}. This change will be saved to the database.
+                        </Typography>
+                        {(removalTarget?.quantity || 0) > 1 && (
+                            <TextField
+                                fullWidth
+                                type="number"
+                                label="Quantity to remove"
+                                value={removeQuantity}
+                                onChange={(event) => setRemoveQuantity(event.target.value)}
+                                inputProps={{
+                                    min: 1,
+                                    max: removalTarget?.quantity || 1,
+                                }}
+                                helperText={`Default is all ${removalTarget?.quantity || 1}.`}
+                            />
+                        )}
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2.5 }}>
+                    <Button onClick={closeRemovalDialog} disabled={isRemoving} sx={{ textTransform: "none", fontWeight: 700 }}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={confirmRemoveItem}
+                        disabled={isRemoving}
+                        variant="contained"
+                        sx={{
+                            bgcolor: "#b42318",
+                            textTransform: "none",
+                            fontWeight: 700,
+                            boxShadow: "none",
+                            "&:hover": { bgcolor: "#971b12" },
+                        }}
+                    >
+                        {isRemoving ? "Removing..." : "Confirm Remove"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Snackbar open={Boolean(error)} autoHideDuration={4000} onClose={() => setError("")} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+                <Alert severity="error" variant="filled" onClose={() => setError("")}>
+                    {error}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }
