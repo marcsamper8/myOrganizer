@@ -159,7 +159,7 @@ export function OrganizerHeader({ user }) {
     );
 }
 
-export function OrganizerFooter({ active = "Home" }) {
+export function OrganizerFooter() {
     return (
         <Box
             component="footer"
@@ -172,7 +172,7 @@ export function OrganizerFooter({ active = "Home" }) {
         >
 
             <Typography sx={{ color: "#7d84a2", fontSize: 16, textAlign: "center", mt: { xs: 3, sm: 1.5 } }}>
-                {"\u00A9"} 2024 My Organizer. All rights reserved.
+                {"\u00A9"} Marc Ahlen Samper
             </Typography>
         </Box>
     );

@@ -118,25 +118,6 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                         </Typography>
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 1.5, sm: 3 }} sx={{ width: { xs: "100%", sm: "auto" }, pt: 1 }}>
                             <Button
-                                onClick={handleLogout}
-                                variant="outlined"
-                                startIcon={<LogoutIcon />}
-                                sx={{
-                                    minWidth: { xs: "100%", sm: 150 },
-                                    height: 52,
-                                    borderRadius: 1.5,
-                                    borderColor: "#c7c9ef",
-                                    color: "#4c47b9",
-                                    bgcolor: "rgba(255,255,255,0.72)",
-                                    fontSize: 16,
-                                    fontWeight: 700,
-                                    textTransform: "none",
-                                    "&:hover": { borderColor: "#4c47d8", bgcolor: "#fff" },
-                                }}
-                            >
-                                Logout
-                            </Button>
-                            <Button
                                 onClick={() => navigate("/organizer/add")}
                                 variant="contained"
                                 startIcon={<PlusIcon />}

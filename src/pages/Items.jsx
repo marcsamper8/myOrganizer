@@ -76,11 +76,22 @@ export function Items({ organizerItems }) {
     const user = getStoredUser();
 
     return (
-        <Box sx={{ minHeight: "100svh", bgcolor: "#f7f8fc", color: "#090927", display: "flex", flexDirection: "column" }}>
+        <Box sx={{
+            minHeight: "100svh",
+            bgcolor: "#f7f8fc",
+            color: "#090927",
+            display: "flex",
+            flexDirection: "column"
+        }}>
             <OrganizerHeader user={user} />
 
             <Box component="main" sx={{ flex: 1, py: { xs: 3, sm: 5 } }}>
-                <Container maxWidth={false} sx={{ px: { xs: 2, sm: 4, lg: 5 }, maxWidth: 1280 }}>
+                <Container
+
+                    sx={{
+                        px: { xs: 2, sm: 4, lg: 5 }
+
+                    }}>
                     <Link
                         component="button"
                         underline="none"
@@ -108,7 +119,7 @@ export function Items({ organizerItems }) {
                         <BoxesIllustration />
 
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 2.5, sm: 4 }} alignItems="center" sx={{ position: "relative", zIndex: 1 }}>
-                            <ToolboxArt />
+
                             <Stack spacing={{ xs: 1.8, sm: 2 }} sx={{ textAlign: { xs: "center", sm: "left" }, minWidth: 0 }}>
                                 <Typography component="h1" sx={{ color: "#090927", fontSize: { xs: 40, sm: 50 }, fontWeight: 700, lineHeight: 1.1, letterSpacing: 0, m: 0, overflowWrap: "anywhere" }}>
                                     {selectedStorage?.storageName || "Storage"}
@@ -123,7 +134,7 @@ export function Items({ organizerItems }) {
                                     <Stack direction="row" spacing={1.5} alignItems="center">
                                         <CubeIcon sx={{ color: "#545a79", fontSize: 30 }} />
                                         <Typography sx={{ color: "#555b7a", fontSize: { xs: 19, sm: 24 }, lineHeight: 1.2 }}>
-                                            {items.length} items
+                                            {items.length} {items.length > 1 ? 'items' : 'item'}
                                         </Typography>
                                     </Stack>
                                 </Stack>
@@ -132,9 +143,14 @@ export function Items({ organizerItems }) {
                     </Box>
 
                     <Typography component="h2" sx={{ color: "#090927", fontSize: { xs: 28, sm: 34 }, fontWeight: 700, lineHeight: 1.2, letterSpacing: 0, m: 0 }}>
-                        Items in {selectedStorage?.storageName || "Storage"}
+                        {items.length > 1 ? 'Items' : 'Item'} in {selectedStorage?.storageName || "Storage"}
                     </Typography>
-                    <Box sx={{ height: 1, bgcolor: "#e4e7f1", my: { xs: 2.5, sm: 3.5 } }} />
+                    <Box sx={{
+                        height: 1,
+                        bgcolor: "#e4e7f1",
+                        my: { xs: 2.5, sm: 3.5 }
+                    }}
+                    />
 
                     <ItemContainer items={items} />
                 </Container>

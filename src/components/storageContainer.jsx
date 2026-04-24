@@ -208,7 +208,7 @@ export function StorageContainer({ organizerItems = [] }) {
                                     <Stack direction="row" spacing={1.5} alignItems="center">
                                         <CubeIcon sx={{ color: "#5f6386", fontSize: 27 }} />
                                         <Typography sx={{ color: "#555b7a", fontSize: { xs: 18, sm: 23 }, lineHeight: 1.2 }}>
-                                            {itemCount} items
+                                            {itemCount} {itemCount > 1 ? 'items' : 'item'}
                                         </Typography>
                                     </Stack>
                                 </Stack>
@@ -235,7 +235,7 @@ export function StorageContainer({ organizerItems = [] }) {
                                         },
                                     }}
                                 >
-                                    View Items
+                                    {itemCount > 1 ? 'View Items' : 'View Item'}
                                 </Button>
                             </Stack>
 

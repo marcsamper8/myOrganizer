@@ -99,26 +99,11 @@ export function ItemContainer({ items = [] }) {
 
                 return (
                     <Box key={key}>
-                        <Typography
-                            component="h3"
-                            sx={{
-                                color: "#090927",
-                                fontSize: { xs: 28, sm: 34 },
-                                fontWeight: 700,
-                                lineHeight: 1.2,
-                                letterSpacing: 0,
-                                m: 0,
-                                mb: { xs: 2, sm: 2.5 },
-                                overflowWrap: "anywhere",
-                            }}
-                        >
-                            {itemName}
-                        </Typography>
 
                         <Paper
                             elevation={0}
                             sx={{
-                                width: "100%",
+                                width: "auto",
                                 border: "1px solid #e4e7f1",
                                 borderRadius: 2,
                                 boxShadow: "0 8px 20px rgba(33, 34, 65, 0.07)",
@@ -126,51 +111,45 @@ export function ItemContainer({ items = [] }) {
                                 bgcolor: "#fff",
                             }}
                         >
-                            <Stack direction="row" alignItems="center" spacing={{ xs: 2, sm: 5 }}>
-                                <ItemArt name={itemName} type={itemType} />
+                            <Stack direction="row"
+                                alignItems="center"
+                                spacing={{ xs: 2, sm: 5 }}
+                            >
 
                                 <Stack
                                     spacing={{ xs: 1.25, sm: 2 }}
                                     sx={{
                                         minWidth: 0,
                                         flex: 1,
+                                        alignItems: "start",
                                     }}
                                 >
                                     <Typography
+                                        component="h3"
                                         sx={{
-                                            color: "#16172b",
-                                            fontSize: { xs: 18, sm: 24 },
+                                            color: "#090927",
+                                            fontSize: { xs: 28, sm: 34 },
+                                            fontWeight: 700,
+                                            lineHeight: 1.2,
+                                            letterSpacing: 0,
+                                            m: 0,
+                                            mb: { xs: 2, sm: 2.5 },
+                                            overflowWrap: "anywhere",
+                                        }}
+                                    >
+                                        {quantity} {itemName}
+                                    </Typography>
+                                    <Typography
+                                        sx={{
+                                            color: "#9b9b9c",
+                                            fontSize: { xs: 14, sm: 24 },
                                             lineHeight: 1.2,
                                             overflowWrap: "anywhere",
                                         }}
                                     >
                                         {itemType}
                                     </Typography>
-                                    <Typography
-                                        sx={{
-                                            color: "#16172b",
-                                            fontSize: { xs: 18, sm: 24 },
-                                            lineHeight: 1.2,
-                                        }}
-                                    >
-                                        {quantity}
-                                    </Typography>
                                 </Stack>
-
-                                <IconButton
-                                    aria-label={`View ${itemName}`}
-                                    sx={{
-                                        color: "#6656dc",
-                                        width: { xs: 42, sm: 54 },
-                                        height: { xs: 42, sm: 54 },
-                                        flex: "0 0 auto",
-                                        "&:hover": {
-                                            bgcolor: "#f1efff",
-                                        },
-                                    }}
-                                >
-                                    <ChevronRightIcon sx={{ fontSize: { xs: 30, sm: 36 } }} />
-                                </IconButton>
                             </Stack>
                         </Paper>
                     </Box>
