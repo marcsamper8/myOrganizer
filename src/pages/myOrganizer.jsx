@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import jsQR from "jsqr";
 import { StorageContainer } from "../components/storageContainer";
 import { OrganizerFooter, OrganizerHeader } from "../components/OrganizerChrome";
 import Alert from "@mui/material/Alert";
@@ -67,6 +68,50 @@ const clearScanner = async (scanner) => {
         // Clear can also throw when no camera session was created.
     }
 };
+
+const readQrFromImageFile = (file) =>
+    new Promise((resolve, reject) => {
+        const image = new Image();
+        const objectUrl = URL.createObjectURL(file);
+
+        image.onload = () => {
+            try {
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d", { willReadFrequently: true });
+
+                if (!context) {
+                    reject(new Error("Canvas is unavailable."));
+                    return;
+                }
+
+                canvas.width = image.naturalWidth;
+                canvas.height = image.naturalHeight;
+                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "attemptBoth",
+                });
+
+                if (code?.data) {
+                    resolve(code.data);
+                } else {
+                    reject(new Error("No QR code found."));
+                }
+            } catch (error) {
+                reject(error);
+            } finally {
+                URL.revokeObjectURL(objectUrl);
+            }
+        };
+
+        image.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error("Could not load image."));
+        };
+
+        image.src = objectUrl;
+    });
 
 function PlantIllustration() {
     return (
@@ -200,6 +245,18 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
 
         const startScanner = async () => {
             try {
+                const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+
+                if (!window.isSecureContext && !isLocalHost) {
+                    setScanError("Camera scanning requires HTTPS. Use Scan Image instead.");
+                    return;
+                }
+
+                if (!navigator.mediaDevices?.getUserMedia) {
+                    setScanError("Camera scanning is unavailable in this browser. Use Scan Image instead.");
+                    return;
+                }
+
                 if (!isActive) {
                     return;
                 }
@@ -227,7 +284,10 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                     }
                 );
             } catch (error) {
-                setScanError(error.message || "Unable to open the camera. Check camera permission and HTTPS.");
+                const message = error.name === "NotAllowedError"
+                    ? "Camera permission was blocked. Allow camera access or use Scan Image."
+                    : error.message || "Unable to open the camera. Use Scan Image instead.";
+                setScanError(message);
             }
         };
 
@@ -252,9 +312,7 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                 scannerRef.current = null;
             }
 
-            const scanner = new Html5Qrcode("qr-reader", qrScannerConfig);
-            const decodedText = await scanner.scanFile(file, true);
-            await clearScanner(scanner);
+            const decodedText = await readQrFromImageFile(file);
             handleScannedValue(decodedText);
         } catch {
             setScanError("Could not read a QR code from that image. Use a clear, uncropped QR image.");
@@ -406,6 +464,7 @@ export function MyOrganizer({ organizerItems, isLoading = false }) {
                             ref={fileInputRef}
                             type="file"
                             accept="image/*"
+                            capture="environment"
                             onChange={onScanImageFile}
                             sx={{ display: "none" }}
                         />
